@@ -1,0 +1,135 @@
+service: scheduly
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: ${env:AWS_REGION}
+  stage: ${opt:stage, 'dev'}
+  layers:
+    - { Ref: PythonRequirementsLambdaLayer }
+  
+  environment:
+    STAGE: ${opt:stage, 'dev'}
+  
+  memorySize: 256
+  timeout: 30
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:*
+          Resource: 
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/sheduly_appointments"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/sheduly_appointments/*"
+  
+  tags:
+    Environment: ${opt:stage, 'dev'}
+    Project: ${self:service}
+    ManagedBy: serverless
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - '!.dynamodb/**'
+    - '!.pytest_cache/**'
+    - '!__pycache__/**'
+    - '!tests/**'
+    - '!.env'
+    - '!.git/**'
+    - '!.github/**'
+    - '!README.md'
+    - '!package*.json'
+    - '!requirements.txt'
+    - '!serverless*.yml'
+
+functions:
+  getAppointments:
+    handler: src/lambdas/appointments/get_appointments/lambda_handler.lambda_handler
+    memorySize: 256
+    timeout: 30
+    events:
+      - http:
+          path: /appointments
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Api-Key
+            allowCredentials: false
+  
+  createAppointment:
+    handler: src/lambdas/appointments/create_appointment/lambda_handler.lambda_handler
+    memorySize: 256
+    timeout: 30
+    events:
+      - http:
+          path: /appointments
+          method: post
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Api-Key
+            allowCredentials: false
+
+  updateAppointment:
+    handler: src/lambdas/appointments/update_appointment/lambda_handler.lambda_handler
+    memorySize: 256
+    timeout: 30
+    events:
+      - http:
+          path: /appointments/{id}
+          method: put
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Api-Key
+            allowCredentials: false
+
+  deleteAppointment:
+    handler: src/lambdas/appointments/delete_appointment/lambda_handler.lambda_handler
+    memorySize: 256
+    timeout: 30
+    events:
+      - http:
+          path: /appointments/{id}
+          method: delete
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Api-Key
+            allowCredentials: false
+
+custom:
+  stages:
+    - dev
+    - prod
+  
+  dynamodb:
+    stages:
+      - dev
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+  
+  pythonRequirements:
+    dockerizePip: true
+    layer:
+      name: python-deps
+      description: Python dependencies for Scheduly
+
+plugins:
+  - serverless-python-requirements
+  - serverless-dynamodb-local
+  - serverless-offline
