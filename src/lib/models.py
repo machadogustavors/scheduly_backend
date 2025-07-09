@@ -1,8 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import date as Date
+from datetime import datetime as Datetime
 
 class AppointmentBase(BaseModel):
-    datetime: Optional[Date] = None
+    datetime: Optional[Datetime] = None
     name: Optional[str] = None
     description: Optional[str] = None
