@@ -23,7 +23,7 @@ def lambda_handler(event, context):
                 updates[k] = v.isoformat()
         
         result = db.update_item(
-            'servicos',
+            'sheduly_appointments',
             {'id': id},
             updates
         )
